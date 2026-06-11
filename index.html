@@ -334,7 +334,7 @@ function openArticle(path) {
   let h = '<div class="article-detail">';
   h += `<button class="back-btn" onclick="goBack()">← 返回列表</button>`;
   h += `<h1>${escHtml(a.title)}</h1>`;
-  h += `<div class="article-actions"><button class="btn-mini" onclick="var p=${escJs(a.path)};event.stopPropagation();showArticleEditor(DATA.find(a=>a.path===p))">✏️ 编辑</button><button class="btn-mini danger" onclick="var p=${escJs(a.path)};event.stopPropagation();deleteArticle(p)">🗑 删除</button></div>`;
+  h += `<div class="article-actions"><button class="btn-mini" onclick="var p='${escJs(a.path)}';event.stopPropagation();showArticleEditor(DATA.find(a=>a.path===p))">✏️ 编辑</button><button class="btn-mini danger" onclick="var p='${escJs(a.path)}';event.stopPropagation();deleteArticle(p)">🗑 删除</button></div>`;
   h += `<div class="article-meta"><span>📅 ${a.date}</span><span>📂 ${a.category}</span>${a.source && a.source.startsWith('http') ? `<span>🔗 <a href="${escHtml(a.source)}" target="_blank" style="color:var(--accent);text-decoration:none">${escHtml(a.source)}</a></span>` : `<span>🔗 ${escHtml(a.source)}</span>`}<span class="tag tag-green">${a.summary_method || 'auto'}</span></div>`;
   if (a.summary) h += `<div class="summary-block"><h3>📝 AI 摘要</h3><p>${escHtml(a.summary)}</p></div>`;
   h += `<div class="article-body">${renderMD(a.content)}</div>`;
