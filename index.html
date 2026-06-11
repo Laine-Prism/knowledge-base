@@ -237,6 +237,17 @@ function mergeLocalChanges() {
 mergeLocalChanges();
 
 
+// API 配置：本地运行时会自动检测 kb_server
+const API_BASE = (() => {
+  try { return window.location.port === '8765' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '/api' : null; }
+  catch(e) { return null; }
+})();
+// localStorage 键名
+const LS_KEY = 'kb_local_changes';
+function getLocalChanges() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{"edits":{},"deleted":[]}'); } catch(e) { return {"edits":{},"deleted":[]}; } }
+function saveLocalChanges(changes) { localStorage.setItem(LS_KEY, JSON.stringify(changes)); }
+
+
 function init() {
   renderSidebar();
   renderList();
