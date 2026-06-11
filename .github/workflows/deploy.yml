@@ -1,0 +1,40 @@
+name: Deploy Knowledge Base to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # 也允许手动触发
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Build Knowledge Base HTML
+        run: python3 scripts/build_kb_html.py
+      
+      - name: Move HTML to pages root
+        run: |
+          mkdir -p _site
+          cp knowledge_base/index.html _site/
+          
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

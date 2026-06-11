@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+
+# Temp files
+/tmp/
+*.tmp
+
+# Config files with sensitive info
+config/collector_state.json
+config/processed_files.json
+
+# Downloads (raw files, not the knowledge base itself)
+downloads/
+
+# We don't ignore knowledge_base because it's the actual content!

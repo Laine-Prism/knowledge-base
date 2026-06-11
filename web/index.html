@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 知识库</title>
+<style>
+:root {
+  --bg: #f8f9fa;
+  --card-bg: #ffffff;
+  --text: #2c3e50;
+  --text-secondary: #6b7280;
+  --border: #e5e7eb;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-light: #eff6ff;
+  --tag-bg: #f3f4f6;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --radius: 8px;
+  --transition: 0.15s ease;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Layout */
+.app { display: flex; height: 100vh; }
+.sidebar {
+  width: 280px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 20px;
+  flex-shrink: 0;
+}
+.main { flex: 1; overflow-y: auto; }
+
+/* Header */
+.header { 
+  padding: 24px 32px 16px;
+  position: sticky; top: 0; background: var(--bg);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+.header h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+.search-box {
+  display: flex; gap: 8px; max-width: 600px;
+}
+.search-box input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.search-box input:focus { border-color: var(--accent); }
+.search-box button {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.search-box button:hover { background: var(--accent-hover); }
+
+/* Sidebar */
+.sidebar h3 { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; }
+.sidebar h3:first-child { margin-top: 0; }
+.sidebar .cat-link {
+  display: block; padding: 6px 10px; border-radius: 6px;
+  font-size: 14px; color: var(--text); text-decoration: none;
+  cursor: pointer; transition: background var(--transition);
+}
+.sidebar .cat-link:hover, .cat-link.active { background: var(--accent-light); color: var(--accent); }
+.sidebar .sub-link {
+  display: block; padding: 4px 10px 4px 24px; border-radius: 6px;
+  font-size: 13px; color: var(--text-secondary); text-decoration: none;
+  cursor: pointer; transition: background var(--transition);
+}
+.sidebar .sub-link:hover, .sub-link.active { background: var(--accent-light); color: var(--accent); }
+.sidebar .article-count { font-size: 11px; color: var(--text-secondary); float: right; }
+
+/* Content Area */
+.content { padding: 0 32px 40px; max-width: 900px; }
+.list-header { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+.result-count { font-weight: 600; color: var(--text); }
+
+/* Article Card */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+.card:hover { box-shadow: var(--shadow); border-color: #d1d5db; }
+.card .card-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.card .card-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; display: flex; gap: 12px; flex-wrap: wrap; }
+.card .card-meta span { display: inline-flex; align-items: center; gap: 3px; }
+.card .card-summary { font-size: 14px; color: #4b5563; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card .tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; background: var(--tag-bg); color: var(--text-secondary);
+}
+
+/* Article Detail */
+.article-detail { padding: 0 32px 40px; max-width: 900px; }
+.article-detail .back-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px; margin-bottom: 20px;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 13px; color: var(--text);
+  cursor: pointer; transition: border-color var(--transition);
+}
+.article-detail .back-btn:hover { border-color: var(--accent); }
+.article-meta {
+  display: flex; flex-wrap: wrap; gap: 16px; margin: 12px 0 20px;
+  font-size: 13px; color: var(--text-secondary);
+}
+.article-meta .tag { background: var(--accent-light); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.article-body { font-size: 15px; line-height: 1.8; }
+.article-body h1, .article-body h2, .article-body h3 { margin-top: 24px; margin-bottom: 12px; }
+.article-body h1 { font-size: 22px; }
+.article-body h2 { font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.article-body h3 { font-size: 15px; }
+.article-body p { margin-bottom: 12px; }
+.article-body ul, .article-body ol { padding-left: 24px; margin-bottom: 12px; }
+.article-body li { margin-bottom: 4px; }
+.article-body code {
+  padding: 2px 6px; border-radius: 4px;
+  font-size: 13px; background: #f1f5f9; color: #e11d48;
+}
+.article-body pre {
+  padding: 16px; border-radius: var(--radius); overflow-x: auto;
+  background: #1e293b; color: #e2e8f0; font-size: 13px; line-height: 1.5;
+  margin-bottom: 16px;
+}
+.article-body pre code { background: none; color: inherit; padding: 0; }
+.article-body blockquote {
+  border-left: 3px solid var(--accent); padding: 8px 16px;
+  margin: 12px 0; color: var(--text-secondary); background: var(--accent-light);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.article-body table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+.article-body th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 600; border: 1px solid var(--border); }
+.article-body td { padding: 8px 12px; border: 1px solid var(--border); }
+.article-body hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.article-body img { max-width: 100%; border-radius: var(--radius); }
+
+/* Summary block */
+.summary-block {
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px;
+}
+.summary-block h3 { color: #92400e; font-size: 14px; margin-bottom: 6px; }
+.summary-block p { font-size: 14px; color: #78350f; margin: 0; }
+
+/* Empty state */
+.empty { text-align: center; padding: 80px 20px; color: var(--text-secondary); }
+.empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Loading */
+.loading { text-align: center; padding: 40px; color: var(--text-secondary); }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .app { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 12px 16px; }
+  .sidebar h3 { margin-top: 8px; }
+  .content, .article-detail { padding: 0 16px 32px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <h3>📂 分类</h3>
+    <div id="categoryList"></div>
+  </aside>
+  <div class="main" id="main">
+    <div class="header">
+      <h1>📚 知识库</h1>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="搜索文章标题、摘要、正文..." onkeyup="if(event.key==='Enter')search()">
+        <button onclick="search()">🔍 搜索</button>
+      </div>
+    </div>
+    <div id="viewArea"></div>
+  </div>
+</div>
+<script>
+// State
+let structure = [];
+let currentView = 'list';
+let currentCategory = null;
+
+// API
+const API = '';
+async function fetchAPI(path) {
+  const res = await fetch(API + path);
+  return res.json();
+}
+
+// Init
+async function init() {
+  structure = await fetchAPI('/api/structure');
+  renderSidebar();
+  renderList();
+}
+init();
+
+// Sidebar
+function renderSidebar() {
+  const el = document.getElementById('categoryList');
+  let html = '';
+  
+  html += `<a class="cat-link ${!currentCategory ? 'active' : ''}" onclick="showAll()">📋 全部文章</a>`;
+  
+  for (const cat of structure) {
+    const totalArticles = cat.children.reduce((sum, c) => sum + c.articles.length, 0);
+    html += `<h3>📁 ${cat.category} <span class="article-count">${totalArticles}</span></h3>`;
+    
+    for (const child of cat.children) {
+      html += `<a class="sub-link" onclick="filterByDate('${child.name}')">📅 ${child.name} <span class="article-count">${child.articles.length}</span></a>`;
+    }
+  }
+  
+  el.innerHTML = html;
+}
+
+function showAll() {
+  currentCategory = null;
+  currentView = 'list';
+  renderSidebar();
+  renderList();
+}
+function filterByDate(date) {
+  currentCategory = date;
+  currentView = 'list';
+  renderSidebar();
+  renderList();
+}
+
+// List View
+function renderList() {
+  const area = document.getElementById('viewArea');
+  let articles = [];
+  
+  for (const cat of structure) {
+    for (const child of cat.children) {
+      if (currentCategory && child.name !== currentCategory) continue;
+      for (const a of child.articles) {
+        articles.push(a);
+      }
+    }
+  }
+  
+  if (articles.length === 0) {
+    area.innerHTML = '<div class="content"><div class="empty"><div class="icon">📭</div><p>暂无文章</p></div></div>';
+    return;
+  }
+  
+  let html = '<div class="content">';
+  html += `<div class="list-header">共 <span class="result-count">${articles.length}</span> 篇文章</div>`;
+  
+  for (const a of articles) {
+    html += `
+      <div class="card" onclick="openArticle('${encodeURIComponent(a.path)}')">
+        <div class="card-title">${escapeHtml(a.title)}</div>
+        <div class="card-meta">
+          <span>📅 ${a.date}</span>
+          <span>📂 ${a.category}</span>
+          <span>🏷️ ${a.summary_method || '自动'}</span>
+          <span>🔗 ${escapeHtml(a.source || '未知来源')}</span>
+        </div>
+        <div class="card-summary">${escapeHtml(a.summary || '暂无摘要')}</div>
+      </div>`;
+  }
+  
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+// Search
+async function search() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) { showAll(); return; }
+  
+  const area = document.getElementById('viewArea');
+  area.innerHTML = '<div class="content"><div class="loading">🔍 搜索中...</div></div>';
+  
+  const results = await fetchAPI(`/api/search?q=${encodeURIComponent(q)}`);
+  
+  if (results.length === 0) {
+    area.innerHTML = '<div class="content"><div class="empty"><div class="icon">🔍</div><p>未找到匹配"${escapeHtml(q)}"的文章</p></div></div>';
+    return;
+  }
+  
+  let html = '<div class="content">';
+  html += `<div class="list-header">搜索 "<span class="result-count">${escapeHtml(q)}</span>"，共 ${results.length} 条结果</div>`;
+  
+  for (const r of results) {
+    html += `
+      <div class="card" onclick="openArticle('${encodeURIComponent(r.path)}')">
+        <div class="card-title">${escapeHtml(r.title)}</div>
+        <div class="card-meta">
+          <span>📅 ${r.date}</span>
+          <span>📂 ${r.category}</span>
+          <span>⭐ ${r.score}</span>
+        </div>
+        <div class="card-summary">${escapeHtml(r.snippet || r.summary)}</div>
+      </div>`;
+  }
+  
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+// Article Detail
+async function openArticle(path) {
+  document.getElementById('sidebar').style.display = 'none';
+  currentView = 'detail';
+  
+  const area = document.getElementById('viewArea');
+  area.innerHTML = '<div class="article-detail"><div class="loading">⏳ 加载中...</div></div>';
+  
+  const article = await fetchAPI(`/api/article?path=${encodeURIComponent(path)}`);
+  
+  let html = '<div class="article-detail">';
+  html += `<button class="back-btn" onclick="goBack()">← 返回列表</button>`;
+  html += `<h1>${escapeHtml(article.title)}</h1>`;
+  html += `<div class="article-meta">`;
+  html += `<span>📅 ${article.date}</span>`;
+  html += `<span>📂 ${article.category}</span>`;
+  html += `<span class="tag">${article.summary_method || '自动'}</span>`;
+  html += `<span>🔗 ${escapeHtml(article.source || '未知来源')}</span>`;
+  html += `</div>`;
+  
+  if (article.summary) {
+    html += `<div class="summary-block"><h3>📝 AI 摘要</h3><p>${escapeHtml(article.summary)}</p></div>`;
+  }
+  
+  html += `<div class="article-body">${renderMarkdown(article.content)}</div>`;
+  html += '</div>';
+  
+  area.innerHTML = html;
+  area.scrollTop = 0;
+}
+
+function goBack() {
+  document.getElementById('sidebar').style.display = '';
+  currentView = 'list';
+  renderList();
+  window.scrollTo(0, 0);
+}
+
+// Simple Markdown rendering
+function renderMarkdown(text) {
+  if (!text) return '';
+  
+  let html = text;
+  
+  // Code blocks
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  // Headers
+  html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  
+  // Bold & italic
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  
+  // Images
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+  
+  // Blockquotes
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  
+  // Horizontal rules
+  html = html.replace(/^---$/gm, '<hr>');
+  
+  // Unordered lists
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+  
+  // Ordered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  
+  // Tables (simple: rows with |)
+  html = html.replace(/^\|(.+)\|$/gm, (match) => {
+    const cells = match.split('|').filter(c => c.trim());
+    if (cells.every(c => c.trim().match(/^-+$/))) return ''; // separator row
+    const td = cells.map(c => `<td>${c.trim()}</td>`).join('');
+    return `<tr>${td}</tr>`;
+  });
+  
+  // Paragraphs
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = '<p>' + html + '</p>';
+  html = html.replace(/<p><\/p>/g, '');
+  
+  return html;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>

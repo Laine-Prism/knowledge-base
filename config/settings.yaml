@@ -1,0 +1,59 @@
+# 微信知识库采集器配置
+
+# 微信本地文件路径
+wechat:
+  base_path: ~/Library/Containers/com.tencent.xinWeChat/Data/Documents/xwechat_files
+  user_id: wxid_g6hajc0yk8ea22_3fb2
+  # 监控的子目录
+  watch_dirs:
+    - msg/file    # 文件分享
+    - msg/attach  # 附件（图片等）
+
+# 知识库存储路径
+knowledge_base:
+  root: ~/Documents/内容知识库搭建/knowledge_base
+  downloads: ~/Documents/内容知识库搭建/downloads
+
+# 链接采集
+collector:
+  # 手动输入的 URL 列表文件（可以手动添加链接到此文件）
+  url_inbox: ~/Documents/内容知识库搭建/config/url_inbox.txt
+  # 状态文件
+  state_file: ~/Documents/内容知识库搭建/config/collector_state.json
+  # 扫描间隔（秒）
+  scan_interval: 60
+  # 支持下载的链接类型
+  supported_domains:
+    - mp.weixin.qq.com     # 微信公众号文章
+    - juejin.cn            # 掘金
+    - zhihu.com            # 知乎
+    - github.com           # GitHub
+    - arxiv.org            # 论文
+    - medium.com           # Medium
+    - blog.*               # 各种博客
+    - "*"                  # 通配：所有链接都尝试下载
+
+# 摘要生成
+summary:
+  min_length: 300
+  max_length: 500
+  # 使用的 AI 模型（需要配置 API key）
+  model: openai
+  # 备选：本地 ollama
+  fallback_model: ollama
+
+# 文件监控
+file_watcher:
+  # 监控的文件类型
+  extensions:
+    - .md
+    - .pdf
+    - .docx
+    - .txt
+    - .html
+    - .htm
+  # 忽略的文件
+  ignore_patterns:
+    - "*.dat"      # 微信加密图片
+    - "*.DS_Store"
+    - "*_t.dat"    # 缩略图
