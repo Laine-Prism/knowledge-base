@@ -437,6 +437,8 @@ init();
 </body>
 </html>'''
 
+# 还原 CSS/JS 中的花括号（之前是 f-string 转义，现在需要还原）
+html = html.replace("{{", "{").replace("}}", "}")
 OUTPUT.write_text(html.replace("__DATA_JSON__", data_json), encoding="utf-8")
 print(f"✅ 知识库 HTML 已生成: {OUTPUT}")
 print(f"   共 {len(json.loads(data_json))} 篇文章")
