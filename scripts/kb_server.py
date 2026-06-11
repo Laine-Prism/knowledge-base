@@ -166,6 +166,78 @@ def search_content(query):
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:30]
 
+
+def save_article(data, overwrite=True):
+    """保存或更新文章到 .md 文件"""
+    from datetime import datetime as dt
+    title = data.get("title", "").strip()
+    category = data.get("category", "").strip()
+    date = data.get("date", "").strip()
+    source = data.get("source", "").strip()
+    summary = data.get("summary", "").strip()
+    content = data.get("content", "").strip()
+    existing_path = data.get("path", "").strip()
+
+    if not title:
+        return {"error": "标题不能为空"}
+    if not category:
+        return {"error": "分类不能为空"}
+
+    safe_title = re.sub(r'[<>:"/\\|?*]', '_', title)[:80]
+    if not date:
+        date = dt.now().strftime("%Y-%m-%d")
+
+    sub_dir = date
+    if existing_path:
+        parts = Path(existing_path).parts
+        if len(parts) >= 2:
+            sub_dir = parts[1]
+
+    cat_dir = KB_ROOT / category / sub_dir
+    cat_dir.mkdir(parents=True, exist_ok=True)
+
+    if overwrite and existing_path:
+        filepath = KB_ROOT / existing_path
+    else:
+        filepath = cat_dir / f"{safe_title}.md"
+        counter = 1
+        while filepath.exists():
+            filepath = cat_dir / f"{safe_title}_{counter}.md"
+            counter += 1
+
+    md_content = f'''---
+title: "{title}"
+date: "{date}"
+source: "{source}"
+category: "{category}"
+summary_method: "manual"
+---
+
+## 📝 摘要
+
+{summary}
+
+---
+
+## 📄 原文
+
+{content}
+'''
+    filepath.write_text(md_content, encoding="utf-8")
+
+    rel_path = str(filepath.relative_to(KB_ROOT))
+    return {"ok": True, "path": rel_path, "message": f"文章已保存: {rel_path}"}
+
+def delete_article(rel_path):
+    """删除文章"""
+    if not rel_path:
+        return {"error": "未指定文章路径"}
+    filepath = KB_ROOT / rel_path
+    if not filepath.exists():
+        return {"error": "文章不存在"}
+    filepath.unlink()
+    return {"ok": True, "path": rel_path, "message": f"文章已删除: {rel_path}"}
+
 class KBHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -215,10 +287,40 @@ class KBHandler(http.server.BaseHTTPRequestHandler):
         else:
             self.wfile.write(json.dumps({"error": "Not found"}, ensure_ascii=False).encode("utf-8"))
     
+    def do_POST(self):
+        self._handle_write("POST")
+
+    def do_PUT(self):
+        self._handle_write("PUT")
+
+    def do_DELETE(self):
+        self._handle_write("DELETE")
+
+    def _handle_write(self, method):
+        """处理 增/改/删 请求"""
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(content_length)) if content_length > 0 else {}
+
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+
+        if path == "/api/article" and method in ("POST", "PUT"):
+            result = save_article(body, overwrite=(method == "PUT"))
+            self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+        elif path == "/api/article" and method == "DELETE":
+            result = delete_article(body.get("path", ""))
+            self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+        else:
+            self.wfile.write(json.dumps({"error": "Unknown endpoint"}, ensure_ascii=False).encode("utf-8"))
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
         self.end_headers()
     

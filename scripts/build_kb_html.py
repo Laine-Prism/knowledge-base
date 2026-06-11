@@ -72,7 +72,7 @@ def escape_js(text):
 
 data_json = json.dumps(scan_and_build(), ensure_ascii=False)
 
-html = f'''<!DOCTYPE html>
+html = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -135,6 +135,31 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC
 .tag {{ display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 11px; background: #e0e7ff; color: #4338ca; }}
     .tag-green {{ background: #d1fae5; color: #065f46; }}
 @media (max-width: 768px) {{ .app {{ flex-direction: column; }} .sidebar {{ width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }} .content, .article-detail {{ padding: 0 14px 28px; }} }}
+
+/* CRUD 表单 */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: flex; align-items: center; justify-content: center; }
+.modal { background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 650px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+.modal h2 { margin-bottom: 16px; font-size: 18px; }
+.modal label { display: block; font-size: 13px; color: var(--text-secondary); margin: 10px 0 4px; }
+.modal input, .modal select, .modal textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; transition: border-color var(--transition); }
+.modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--accent); outline: none; }
+.modal textarea { resize: vertical; min-height: 100px; }
+.modal-btns { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+.modal-btns button { padding: 8px 20px; border-radius: 6px; font-size: 14px; border: none; cursor: pointer; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: var(--tag-bg); color: var(--text); }
+.btn-secondary:hover { background: var(--border); }
+.btn-danger { background: #fee2e2; color: #dc2626; font-size: 12px; padding: 4px 12px; border-radius: 6px; border: none; cursor: pointer; margin-left: 8px; }
+.btn-danger:hover { background: #fecaca; }
+.btn-mini { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); cursor: pointer; transition: all var(--transition); }
+.btn-mini:hover { border-color: var(--accent); color: var(--accent); }
+.btn-mini.danger:hover { border-color: #dc2626; color: #dc2626; }
+.article-actions { display: flex; gap: 6px; margin: 8px 0 0; }
+.status-msg { padding: 6px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 8px; }
+.status-msg.success { background: #d1fae5; color: #065f46; }
+.status-msg.error { background: #fee2e2; color: #991b1b; }
+
 </style>
 </head>
 <body>
@@ -148,9 +173,143 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC
 </div>
 </div>
 <script>
-const DATA = {data_json};
+const DATA = __DATA_JSON__;
 let currentView = 'list';
 let selectedCategory = null;
+
+
+// ========== CRUD 操作 ==========
+let editingPath = null;
+
+function showArticleEditor(existing) {
+  editingPath = existing ? existing.path : null;
+  const cats = [...new Set(DATA.map(a => a.category))];
+  let h = '<div class="modal-overlay" onclick="event.target===this&&closeEditor()"><div class="modal">';
+  h += `<h2>${existing ? '✏️ 编辑文章' : '➕ 新增文章'}</h2>`;
+  h += '<label>标题</label><input id="ae-title" value="' + escHtml(existing ? existing.title : '') + '">';
+  h += '<label>分类</label><div style="display:flex;gap:6px">';
+  h += '<input id="ae-category" list="cat-list" value="' + escHtml(existing ? existing.category : '') + '" style="flex:1">';
+  h += '<datalist id="cat-list">' + cats.map(c => '<option value="' + escHtml(c) + '">').join('') + '</datalist>';
+  h += '</div>';
+  h += '<label>日期</label><input id="ae-date" type="date" value="' + escHtml(existing ? existing.date : '') + '">';
+  h += '<label>来源</label><input id="ae-source" value="' + escHtml(existing ? existing.source || '' : '') + '">';
+  h += '<label>摘要 (300-500字)</label><textarea id="ae-summary" rows="5">' + escHtml(existing ? existing.summary || '' : '') + '</textarea>';
+  h += '<label>正文 (Markdown)</label><textarea id="ae-content" rows="12">' + escHtml(existing ? existing.content || '' : '') + '</textarea>';
+  h += '<div id="ae-status"></div>';
+  h += '<div class="modal-btns">';
+  h += '<button class="btn-secondary" onclick="closeEditor()">取消</button>';
+  h += '<button class="btn-primary" onclick="saveArticle()">' + (existing ? '保存修改' : '创建文章') + '</button>';
+  h += '</div></div></div>';
+  const overlay = document.createElement('div');
+  overlay.innerHTML = h;
+  document.body.appendChild(overlay.firstElementChild);
+}
+
+function closeEditor() {
+  editingPath = null;
+  const overlay = document.querySelector('.modal-overlay');
+  if (overlay) overlay.remove();
+}
+
+async function saveArticle() {
+  const title = document.getElementById('ae-title').value.trim();
+  const category = document.getElementById('ae-category').value.trim();
+  const date = document.getElementById('ae-date').value.trim();
+  const source = document.getElementById('ae-source').value.trim();
+  const summary = document.getElementById('ae-summary').value.trim();
+  const content = document.getElementById('ae-content').value.trim();
+
+  if (!title) { showStatus('请填写标题', 'error'); return; }
+  if (!category) { showStatus('请填写分类', 'error'); return; }
+
+  const payload = { title, category, date, source, summary, content, path: editingPath || undefined };
+
+  try {
+    if (API_BASE) {
+      // 本地 API 模式
+      const method = editingPath ? 'PUT' : 'POST';
+      const resp = await fetch(API_BASE + '/article', {
+        method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+      });
+      const result = await resp.json();
+      if (result.error) { showStatus(result.error, 'error'); return; }
+      showStatus(result.message, 'success');
+      // 延迟刷新
+      setTimeout(() => location.reload(), 800);
+    } else {
+      // 静态模式 - localStorage
+      let changes = getLocalChanges();
+      const newId = editingPath || ('new_' + Date.now());
+      changes.edits[newId] = {
+        ...payload,
+        path: newId,
+        summary_method: 'manual',
+        word_count: content.length,
+      };
+      if (editingPath) changes.edits[editingPath] = changes.edits[newId];
+      saveLocalChanges(changes);
+      showStatus('已保存到本地（静态部署模式）', 'success');
+      setTimeout(() => {
+        mergeLocalChanges();
+        closeEditor();
+        if (currentView === 'detail') openArticle(newId);
+        else renderList();
+      }, 500);
+    }
+  } catch(e) {
+    showStatus('保存失败: ' + e.message, 'error');
+  }
+}
+
+async function deleteArticle(path) {
+  if (!confirm('确定删除这篇文章？此操作不可撤销。')) return;
+
+  try {
+    if (API_BASE) {
+      const resp = await fetch(API_BASE + '/article', {
+        method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({path})
+      });
+      const result = await resp.json();
+      if (result.error) { alert(result.error); return; }
+      location.reload();
+    } else {
+      let changes = getLocalChanges();
+      changes.deleted.push(path);
+      saveLocalChanges(changes);
+      mergeLocalChanges();
+      goBack();
+    }
+  } catch(e) {
+    alert('删除失败: ' + e.message);
+  }
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('ae-status');
+  if (el) el.innerHTML = '<div class="status-msg ' + type + '">' + escHtml(msg) + '</div>';
+}
+
+function mergeLocalChanges() {
+  const changes = getLocalChanges();
+  const deleted = new Set(changes.deleted);
+  // 从 DATA 移除已删除的
+  for (let i = DATA.length - 1; i >= 0; i--) {
+    if (deleted.has(DATA[i].path)) DATA.splice(i, 1);
+  }
+  // 合并编辑
+  for (const [id, edit] of Object.entries(changes.edits)) {
+    const idx = DATA.findIndex(a => a.path === id);
+    if (idx >= 0) {
+      DATA[idx] = { ...DATA[idx], ...edit };
+    } else {
+      DATA.push(edit);
+    }
+  }
+}
+
+// 初始化时合并 localStorage
+mergeLocalChanges();
+
 
 function init() {{
   renderSidebar();
@@ -169,6 +328,7 @@ function renderSidebar() {{
   const cats = getCategories();
   const total = DATA.length;
   let h = `<a class="link ${{!selectedCategory ? 'active' : ''}}" onclick="showAll()">📋 全部文章 (${{total}})</a>`;
+  h += `<button class="btn-primary" style="margin:6px 0;padding:5px 10px;font-size:12px;border-radius:6px;width:100%" onclick="showArticleEditor(null)">➕ 新增文章</button>`;
   cats.forEach(([cat, arts]) => {{
     h += `<h3>📁 ${{escHtml(cat)}} (${{arts.length}})</h3>`;
     arts.forEach(a => {{
@@ -237,6 +397,7 @@ function openArticle(path) {{
   let h = '<div class="article-detail">';
   h += `<button class="back-btn" onclick="goBack()">← 返回列表</button>`;
   h += `<h1>${{escHtml(a.title)}}</h1>`;
+  h += `<div class="article-actions"><button class="btn-mini" onclick="var p=${{escJs(a.path)}};event.stopPropagation();showArticleEditor(DATA.find(a=>a.path===p))">✏️ 编辑</button><button class="btn-mini danger" onclick="var p=${{escJs(a.path)}};event.stopPropagation();deleteArticle(p)">🗑 删除</button></div>`;
   h += `<div class="article-meta"><span>📅 ${{a.date}}</span><span>📂 ${{a.category}}</span>${{a.source && a.source.startsWith('http') ? `<span>🔗 <a href="${{escHtml(a.source)}}" target="_blank" style="color:var(--accent);text-decoration:none">${{escHtml(a.source)}}</a></span>` : `<span>🔗 ${{escHtml(a.source)}}</span>`}}<span class="tag tag-green">${{a.summary_method || 'auto'}}</span></div>`;
   if (a.summary) h += `<div class="summary-block"><h3>📝 AI 摘要</h3><p>${{escHtml(a.summary)}}</p></div>`;
   h += `<div class="article-body">${{renderMD(a.content)}}</div>`;
@@ -276,6 +437,6 @@ init();
 </body>
 </html>'''
 
-OUTPUT.write_text(html, encoding="utf-8")
+OUTPUT.write_text(html.replace("__DATA_JSON__", data_json), encoding="utf-8")
 print(f"✅ 知识库 HTML 已生成: {OUTPUT}")
 print(f"   共 {len(json.loads(data_json))} 篇文章")
