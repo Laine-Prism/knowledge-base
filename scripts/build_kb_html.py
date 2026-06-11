@@ -260,6 +260,7 @@ function renderMD(text) {{
   h = h.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');
   h = h.replace(/\\*(.+?)\\*/g, '<em>$1</em>');
   h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  h = h.replace(/(https?:\/\/[^\s<>"{{}}|\\^`\[\]]+)/g, '<a href="$1" target="_blank">$1</a>');
   h = h.replace(/!\\[([^\\]]*)\\]\\(([^)]+)\\)/g, '<img src="$2" alt="$1">');
   h = h.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
   h = h.replace(/^---$/gm, '<hr>');
